@@ -1,0 +1,40 @@
+language: rust
+branches:
+  only:
+    - master
+cache:
+  - cargo: true
+env:
+  - CARGO_TERM_VERBOSE=true
+matrix:
+  allow_failures:
+    - rust: nightly
+  fast_finish: true
+  include:
+    - rust: 1.30.0
+    - rust: beta
+    - rust: nightly
+    - rust: stable
+      before_script:
+        - rustup component add rustfmt-preview clippy-preview
+      script: >-
+        cargo update &&
+        cargo fmt -- --check &&
+        cargo clippy --all-features --all-targets &&
+        cargo test &&
+        cargo test --all-features &&
+        cargo test --no-default-features
+      before_deploy: >-
+        rm -rf target/doc &&
+        cargo doc --no-deps &&
+        rm -f target/doc/.lock &&
+        echo '<meta http-equiv="refresh" content="0;URL=cargo_version_sync/index.html">' > target/doc/index.html
+      deploy:
+        provider: pages
+        skip_cleanup: true
+        github_token: $GH_TOKEN
+        repo: ubnt-intrepid/cargo-version-sync
+        target_branch: gh-pages
+        local_dir: target/doc
+        on:
+          branch: master

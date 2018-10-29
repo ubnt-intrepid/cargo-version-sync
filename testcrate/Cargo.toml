@@ -1,0 +1,26 @@
+[package]
+name = "testcrate"
+version = "0.1.0"
+authors = ["Yusuke Sasaki <yusuke.sasaki.nuem@gmail.com>"]
+
+[[package.metadata.version-sync.replacements]]
+file = "README.md"
+patterns = [
+  { search = "testcrate = \"[a-z0-9\\.-]+\"", replace = "testcrate = \"{{version}}\"" },
+  { search = "https://docs.rs/testcrate/[a-z0-9\\.-]+", replace = "https://docs.rs/testcrate/{{version}}" },
+]
+
+[[package.metadata.version-sync.replacements]]
+file = "src/lib.rs"
+patterns = [
+  { search = "https://docs.rs/testcrate/[a-z0-9\\.-]+", replace = "https://docs.rs/testcrate/{{version}}" },
+]
+
+[dev-dependencies.cargo-husky]
+version = "1"
+default-features = false
+features = ["user-hooks"]
+
+[dev-dependencies.cargo-version-sync]
+path = ".."
+default-features = false

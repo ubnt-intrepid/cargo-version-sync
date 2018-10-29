@@ -1,0 +1,49 @@
+[package]
+name = "cargo-version-sync"
+version = "0.0.1"
+authors = ["Yusuke Sasaki <yusuke.sasaki.nuem@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/ubnt-intrepid/cargo-prerelease.git"
+readme = "README.md"
+description = """
+Cargo subcommand for keeping the version numbers in sync with Cargo.toml
+"""
+
+include = [
+  "/Cargo.toml",
+  "/README.md",
+  "/LICENSE",
+  "/build.rs",
+  "/src/**/*.rs",
+  "/tests/**/*.rs",
+  "/examples/**/*.rs",
+  "/benches/**/*.rs",
+]
+
+[lib]
+name = "cargo_version_sync"
+path = "src/lib.rs"
+
+[[bin]]
+name = "cargo-version-sync"
+path = "src/main.rs"
+required-features = ["bin"]
+
+[dependencies]
+toml = "0.4.8"
+serde = { version = "1", features = ["derive"] }
+failure = "0.1.3"
+chrono = "0.4.6"
+regex = "1.0.5"
+
+structopt = { version = "0.2.12", optional = true }
+difference = { version = "2", optional = true }
+
+[features]
+default = ["bin"]
+bin = ["structopt", "difference"]
+
+[workspace]
+exclude = [
+  "testcrate",
+]
