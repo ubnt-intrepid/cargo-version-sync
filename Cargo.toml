@@ -23,14 +23,14 @@ include = [
 [[package.metadata.version-sync.replacements]]
 file = "README.md"
 replacers = [
-  { type = "regex", search = "{{name}} = \"[a-z0-9\\.-]+\"", replace = "{{name}} = \"{{version}}\"" },
+  { type = "builtin", target = "markdown" },
   { type = "regex", search = "{{name}} = \\{ version = \"[a-z0-9\\.-]+\", default-features = false \\}", replace = "{{name}} = { version = \"{{version}}\", default-features = false }" },
 ]
 
 [[package.metadata.version-sync.replacements]]
 file = "src/lib.rs"
 replacers = [
-  { type = "regex", search = "https://docs.rs/{{name}}/[a-z0-9\\.-]+", replace = "https://docs.rs/{{name}}/{{version}}" },
+  { type = "builtin", target = "html-root-url" },
 ]
 
 [lib]

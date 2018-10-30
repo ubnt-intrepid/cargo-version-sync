@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 use failure::Fallible;
 use serde::Deserialize;
 
+use crate::replacer::Replacer;
+
 #[derive(Debug, Deserialize)]
 pub struct Manifest {
     pub package: Package,
@@ -43,17 +45,4 @@ pub struct Config {
 pub struct Replacement {
     pub file: PathBuf,
     pub replacers: Vec<Replacer>,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-#[serde(tag = "type")]
-pub enum Replacer {
-    #[serde(rename = "regex")]
-    Regex(RegexReplacer),
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct RegexReplacer {
-    pub search: String,
-    pub replace: String,
 }
