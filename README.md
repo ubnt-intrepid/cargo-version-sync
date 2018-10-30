@@ -9,7 +9,7 @@ Cargo subcommand for keeping the version numbers in sync with `Cargo.toml`
 
 ## Status
 
-Exeperimental
+Experimental
 
 ## Installation
 
