@@ -1,17 +1,30 @@
+#![doc(html_root_url = "https://docs.rs/cargo-version-sync/0.0.2")]
+
 extern crate chrono;
 extern crate failure;
 extern crate regex;
 extern crate serde;
 extern crate toml;
 
+#[cfg(feature = "show-diff")]
+extern crate bytecount;
+#[cfg(feature = "show-diff")]
+extern crate colored;
+#[cfg(feature = "show-diff")]
+extern crate difference;
+
+use failure::{format_err, Fallible};
+use serde::Deserialize;
 use std::borrow::Cow;
 use std::env;
 use std::fs;
 use std::mem;
 use std::path::{Path, PathBuf};
 
-use failure::{format_err, Fallible};
-use serde::Deserialize;
+#[cfg(feature = "show-diff")]
+use colored::Colorize;
+#[cfg(feature = "show-diff")]
+use difference::{Changeset, Difference};
 
 use crate::parse::{Manifest, Replacement};
 
@@ -73,14 +86,24 @@ fn replace_all_in_place(re: &regex::Regex, text: &mut Cow<'_, str>, rep: impl re
 }
 
 #[derive(Debug)]
+pub struct Diff {
+    pub file: PathBuf,
+    pub content: String,
+    pub replaced: String,
+    _priv: (),
+}
+
+#[derive(Debug)]
 pub struct Runner {
     manifest: Manifest,
+    manifest_dir: PathBuf,
     replacements: Vec<Replacement>,
 }
 
 impl Runner {
     pub fn init() -> Fallible<Self> {
-        let manifest_path = cargo_manifest_dir()?.join("Cargo.toml");
+        let manifest_dir = cargo_manifest_dir()?;
+        let manifest_path = manifest_dir.join("Cargo.toml");
         let manifest = Manifest::from_file(manifest_path)?
             .ok_or_else(|| format_err!("missing Cargo manifest file"))?;
 
@@ -88,27 +111,12 @@ impl Runner {
 
         Ok(Self {
             manifest,
+            manifest_dir,
             replacements,
         })
     }
-}
 
-#[derive(Debug)]
-pub struct Changeset {
-    pub file: PathBuf,
-    pub content: String,
-    pub replaced: String,
-    _priv: (),
-}
-
-impl Changeset {
-    pub fn dump(&self) -> Fallible<()> {
-        fs::write(&self.file, &self.replaced).map_err(Into::into)
-    }
-}
-
-impl Runner {
-    fn handle_replacement(&self, replace: &Replacement) -> Fallible<Option<Changeset>> {
+    fn handle_replacement(&self, replace: &Replacement) -> Fallible<Option<Diff>> {
         if !replace.file.is_file() {
             return Ok(None);
         }
@@ -126,7 +134,7 @@ impl Runner {
         };
 
         if content != replaced {
-            Ok(Some(Changeset {
+            Ok(Some(Diff {
                 file: replace.file.clone(),
                 content,
                 replaced,
@@ -137,12 +145,39 @@ impl Runner {
         }
     }
 
-    pub fn run(&self) -> Fallible<Vec<Changeset>> {
+    pub fn collect_diffs(&self) -> Fallible<Vec<Diff>> {
         let mut changeset = Vec::new();
         for replace in &self.replacements {
             changeset.extend(self.handle_replacement(replace)?);
         }
         Ok(changeset)
+    }
+
+    #[cfg(feature = "difference")]
+    pub fn show_diff(&self, diff: &Diff) -> Fallible<()> {
+        let file = diff.file.strip_prefix(&self.manifest_dir)?;
+        let changeset = Changeset::new(&diff.content, &diff.replaced, "\n");
+
+        println!("{}:", file.display());
+
+        let mut line = 1;
+        for diff in &changeset.diffs {
+            match diff {
+                Difference::Same(ref x) => line += bytecount::count(x.as_ref(), b'\n') + 1,
+                Difference::Rem(ref x) => {
+                    println!("  - ({:>4}) {}", line, x.to_string().red());
+                    line += 1;
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+
+    pub fn relative_file_path<'a>(&self, diff: &'a Diff) -> Fallible<&'a Path> {
+        diff.file
+            .strip_prefix(&self.manifest_dir)
+            .map_err(Into::into)
     }
 }
 
@@ -216,21 +251,48 @@ mod parse {
 }
 
 pub fn assert_sync() {
-    let manifest_dir = cargo_manifest_dir().unwrap();
-    match Runner::init().and_then(|runner| runner.run()) {
-        Ok(changeset) => {
-            if !changeset.is_empty() {
-                eprintln!("The version number(s) are not synced in the following files:\n");
-                for change in changeset {
-                    eprintln!(
-                        "  - {}",
-                        change.file.strip_prefix(&manifest_dir).unwrap().display()
-                    );
-                }
-                eprintln!();
-                panic!();
-            }
+    match assert_sync_inner() {
+        Ok(Some(changeset)) => {
+            eprintln!("{}", changeset);
+            panic!();
         }
-        Err(err) => panic!("error: {}", err),
+        Ok(None) => {}
+        Err(e) => panic!("error during checking version sync: {}", e),
     }
+}
+
+pub fn assert_sync_inner() -> Fallible<Option<impl std::fmt::Display>> {
+    let runner = Runner::init().unwrap();
+    let diffs = runner.collect_diffs()?;
+    if diffs.is_empty() {
+        return Ok(None);
+    }
+
+    struct Changeset {
+        files: Vec<PathBuf>,
+    }
+
+    impl std::fmt::Display for Changeset {
+        fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+            writeln!(
+                f,
+                "The version number(s) are not synced in the following files:"
+            )?;
+            writeln!(f)?;
+            for file in &self.files {
+                writeln!(f, "  - {}", file.display())?;
+            }
+            writeln!(f)
+        }
+    }
+
+    Ok(Some(Changeset {
+        files: diffs
+            .iter()
+            .map(|diff| {
+                diff.file
+                    .strip_prefix(&runner.manifest_dir)
+                    .map(ToOwned::to_owned)
+            }).collect::<Result<_, _>>()?,
+    }))
 }

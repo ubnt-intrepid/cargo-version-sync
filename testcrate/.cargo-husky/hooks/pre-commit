@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 if cargo version-sync --version >/dev/null 2>&1; then
     cargo version-sync --check
 fi

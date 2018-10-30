@@ -18,7 +18,7 @@ $ cargo install cargo-version-sync
 
 ## Usage
 
-1. Add fields to `Cargo.toml` for specifying files to rewrite the version numbers by `cargo version-sync`:
+At first, add fields to `Cargo.toml` for specifying files to rewrite the version numbers by `cargo version-sync`:
 
 ```toml
 [[package.metadata.version-sync.replacements]]
@@ -28,22 +28,49 @@ patterns = [
 ]
 ```
 
-2. Run `cargo-version-sync` to rewrite version numbers:
+Then run the command `cargo version-sync` to rewrite version numbers:
 
 ```shell-session
-$ cargo version-sync [--verbose] [--dry-run]
+$ cargo version-sync
 ```
 
-## Working with custom Git hooks
+## Integration test
+
 
 ```toml
-[dev-dependencies.cargo-husky]
-version = "1"
-default-features = false
-features = ["user-hooks"]
+[dev-dependencies]
+cargo-version-sync = "0.0.2"
 ```
 
-in `.cargo-husky/hooks/pre-commit`:
+Then, add a test case in your integration test as follows:
+
+```rust
+extern crate cargo_version_sync;
+
+#[test]
+fn test_version_sync() {
+    cargo_version_sync::assert_sync();
+}
+```
+
+```command
+$ cargo test
+...
+running 1 test
+test test_version_sync ... FAILED
+
+failures:
+
+---- test_version_sync stdout ----
+The version number(s) are not synced in the following files:
+
+  - README.md
+...
+```
+
+## Pre-commit check
+
+in `.git/hooks/pre-commit`:
 
 ```sh
 #!/bin/bash
@@ -59,18 +86,16 @@ if cargo version-sync --version >/dev/null 2>&1; then
 fi
 ```
 
-## Working with `cargo test`
+You can automatically install the custom Git hooks by using [`cargo-husky`].
 
-in `tests/version_sync.rs`:
-
-```rust
-extern crate cargo_version_sync;
-
-#[test]
-fn test_version_sync() {
-    cargo_version_sync::assert_sync();
-}
+```toml
+[dev-dependencies.cargo-husky]
+version = "1"
+default-features = false
+features = ["user-hooks"]
 ```
+
+[`cargo-husky`]: https://github.com/rhysd/cargo-husky.git
 
 ## Alternatives
 
@@ -79,3 +104,9 @@ fn test_version_sync() {
 ## License
 
 [MIT license](./LICENSE)
+
+<!--
+```toml
+cargo-version-sync = "0.0.2"
+```
+-->
