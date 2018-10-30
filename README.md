@@ -39,7 +39,7 @@ $ cargo version-sync
 
 ```toml
 [dev-dependencies]
-cargo-version-sync = "0.0.2"
+cargo-version-sync = { version = "0.0.2", default-features = false }
 ```
 
 Then, add a test case in your integration test as follows:

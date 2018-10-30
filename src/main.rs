@@ -2,7 +2,7 @@ extern crate cargo_version_sync;
 extern crate failure;
 extern crate structopt;
 
-use cargo_version_sync::Runner;
+use cargo_version_sync::runner::Runner;
 
 mod cli {
     use structopt::StructOpt;
@@ -15,12 +15,11 @@ mod cli {
 
     #[derive(Debug, StructOpt)]
     pub struct VersionSync {
-        /// Do not overwrite the changeset to files
-        #[structopt(short = "n", long = "dry-run")]
-        pub dry_run: bool,
+        /// Uses verbose output
+        #[structopt(short = "v", long = "verbose")]
+        pub verbose: bool,
 
-        /// Do not overwrite the changeset to files,
-        /// and return non-zero exit code when the version number(s) are not synced
+        /// Do not overwrite the target files
         #[structopt(long = "check")]
         pub check: bool,
     }
@@ -38,7 +37,9 @@ fn main() -> failure::Fallible<()> {
 
     let diffs = runner.collect_diffs()?;
     if diffs.is_empty() {
-        println!("[cargo-version-sync] no change(s) detected.");
+        if args.verbose {
+            println!("[cargo-version-sync] no change(s) detected.");
+        }
         return Ok(());
     }
 
@@ -51,15 +52,14 @@ fn main() -> failure::Fallible<()> {
         std::process::exit(1);
     }
 
-    if args.dry_run {
-        println!("[cargo-version-sync] The following file(s) will be updated:");
-        for diff in &diffs {
-            println!("  - {}", runner.relative_file_path(diff)?.display());
+    for diff in &diffs {
+        if args.verbose {
+            println!(
+                "[cargo-version-sync] update {}",
+                runner.relative_file_path(diff)?.display()
+            );
         }
-    } else {
-        for diff in &diffs {
-            std::fs::write(&diff.file, &diff.replaced)?;
-        }
+        std::fs::write(&diff.file, &diff.replaced)?;
     }
 
     Ok(())

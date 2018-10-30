@@ -24,6 +24,7 @@ include = [
 file = "README.md"
 patterns = [
   { search = "cargo-version-sync = \"[a-z0-9\\.-]+\"", replace = "cargo-version-sync = \"{{version}}\"" },
+  { search = "cargo-version-sync = \\{ version = \"[a-z0-9\\.-]+\", default-features = false \\}", replace = "cargo-version-sync = { version = \"{{version}}\", default-features = false }" },
 ]
 
 [[package.metadata.version-sync.replacements]]
@@ -39,6 +40,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "cargo-version-sync"
 path = "src/main.rs"
+doc = false
 required-features = ["bin"]
 
 [dependencies]
