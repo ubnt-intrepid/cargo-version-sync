@@ -7,7 +7,7 @@ use chrono::Local;
 use failure::{format_err, Fallible};
 use regex::Regex;
 
-use crate::manifest::{Manifest, Replacement};
+use crate::manifest::{Manifest, Replacement, Replacer};
 
 #[derive(Debug)]
 pub struct Diff {
@@ -49,22 +49,26 @@ impl Runner {
 
         let replaced = {
             let mut replaced = Cow::Borrowed(content.as_str());
-            for pattern in &replace.patterns {
-                let re = {
-                    let search = pattern
-                        .search
-                        .replace("{{name}}", &self.manifest.package.name);
-                    Regex::new(&search)?
-                };
-                let rep = {
-                    let date = Local::now();
-                    pattern
-                        .replace
-                        .replace("{{name}}", &self.manifest.package.name)
-                        .replace("{{version}}", &self.manifest.package.version)
-                        .replace("{{date}}", &date.format("%Y-%m-%d").to_string())
-                };
-                crate::util::replace_all_in_place(&re, &mut replaced, rep.as_str());
+            for replacer in &replace.replacers {
+                match replacer {
+                    Replacer::Regex(pattern) => {
+                        let re = {
+                            let search = pattern
+                                .search
+                                .replace("{{name}}", &self.manifest.package.name);
+                            Regex::new(&search)?
+                        };
+                        let rep = {
+                            let date = Local::now();
+                            pattern
+                                .replace
+                                .replace("{{name}}", &self.manifest.package.name)
+                                .replace("{{version}}", &self.manifest.package.version)
+                                .replace("{{date}}", &date.format("%Y-%m-%d").to_string())
+                        };
+                        crate::util::replace_all_in_place(&re, &mut replaced, rep.as_str());
+                    }
+                }
             }
             replaced.into_owned()
         };
@@ -118,9 +122,9 @@ fn collect_replacements(manifest: &Manifest) -> Fallible<Vec<Replacement>> {
                 .entry(file.clone())
                 .or_insert_with(|| Replacement {
                     file,
-                    patterns: vec![],
-                }).patterns
-                .extend(replace.patterns.clone());
+                    replacers: vec![],
+                }).replacers
+                .extend(replace.replacers.clone());
         }
     }
 

@@ -42,11 +42,18 @@ pub struct Config {
 #[derive(Clone, Debug, Deserialize)]
 pub struct Replacement {
     pub file: PathBuf,
-    pub patterns: Vec<Pattern>,
+    pub replacers: Vec<Replacer>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct Pattern {
+#[serde(tag = "type")]
+pub enum Replacer {
+    #[serde(rename = "regex")]
+    Regex(RegexReplacer),
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct RegexReplacer {
     pub search: String,
     pub replace: String,
 }
