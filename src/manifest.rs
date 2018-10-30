@@ -2,9 +2,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use chrono::Local;
 use failure::Fallible;
-use regex::Regex;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -21,14 +19,11 @@ impl Manifest {
         };
         toml::from_str(&content).map(Some).map_err(Into::into)
     }
-
-    pub fn crate_version(&self) -> &str {
-        &self.package.version
-    }
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Package {
+    pub name: String,
     pub version: String,
     pub metadata: Option<Metadata>,
 }
@@ -54,17 +49,4 @@ pub struct Replacement {
 pub struct Pattern {
     pub search: String,
     pub replace: String,
-}
-
-impl Pattern {
-    pub fn build_regex(&self) -> Fallible<Regex> {
-        Regex::new(&self.search).map_err(Into::into)
-    }
-
-    pub fn replaced_text(&self, version: &str) -> String {
-        let date = Local::now();
-        self.replace
-            .replace("{{version}}", version)
-            .replace("{{date}}", &date.format("%Y-%m-%d").to_string())
-    }
 }

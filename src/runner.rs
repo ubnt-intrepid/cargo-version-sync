@@ -1,8 +1,11 @@
-use failure::{format_err, Fallible};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+
+use chrono::Local;
+use failure::{format_err, Fallible};
+use regex::Regex;
 
 use crate::manifest::{Manifest, Replacement};
 
@@ -47,8 +50,20 @@ impl Runner {
         let replaced = {
             let mut replaced = Cow::Borrowed(content.as_str());
             for pattern in &replace.patterns {
-                let re = pattern.build_regex()?;
-                let rep = pattern.replaced_text(self.manifest.crate_version());
+                let re = {
+                    let search = pattern
+                        .search
+                        .replace("{{name}}", &self.manifest.package.name);
+                    Regex::new(&search)?
+                };
+                let rep = {
+                    let date = Local::now();
+                    pattern
+                        .replace
+                        .replace("{{name}}", &self.manifest.package.name)
+                        .replace("{{version}}", &self.manifest.package.version)
+                        .replace("{{date}}", &date.format("%Y-%m-%d").to_string())
+                };
                 crate::util::replace_all_in_place(&re, &mut replaced, rep.as_str());
             }
             replaced.into_owned()

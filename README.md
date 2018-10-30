@@ -24,7 +24,7 @@ At first, add fields to `Cargo.toml` for specifying files to rewrite the version
 [[package.metadata.version-sync.replacements]]
 file = "README.md"
 patterns = [
-  { search = "https://deps.rs/crate/tsukuyomi/[a-z0-9\\.-]+", replace = "https://deps.rs/crate/tsukuyomi/{{version}}" },
+  { search = "https://deps.rs/crate/{{name}}/[a-z0-9\\.-]+", replace = "https://deps.rs/crate/{{name}}/{{version}}" },
 ]
 ```
 
