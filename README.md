@@ -3,6 +3,7 @@
 [![Crates.io](https://img.shields.io/crates/v/cargo-version-sync.svg)](https://crates.io/crates/cargo-version-sync)
 [![Docs.rs](https://docs.rs/cargo-version-sync/badge.svg)](https://docs.rs/cargo-version-sync)
 [![Build Status](https://travis-ci.org/ubnt-intrepid/cargo-version-sync.svg?branch=master)](https://travis-ci.org/ubnt-intrepid/cargo-version-sync)
+[![dependency status](https://deps.rs/crate/cargo-version-sync/0.0.2/status.svg)](https://deps.rs/crate/cargo-version-sync/0.0.2)
 
 Cargo subcommand for keeping the version numbers in sync with `Cargo.toml`
 
