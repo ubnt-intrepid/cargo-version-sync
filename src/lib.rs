@@ -17,6 +17,5 @@ mod assert;
 mod manifest;
 mod replacer;
 pub mod runner;
-mod util;
 
 pub use crate::assert::assert_version_sync;

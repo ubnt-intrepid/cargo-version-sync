@@ -25,7 +25,7 @@ pub struct Runner {
 
 impl Runner {
     pub fn init() -> Fallible<Self> {
-        let manifest_dir = crate::util::cargo_manifest_dir()?;
+        let manifest_dir = cargo_manifest_dir()?;
         let manifest_path = manifest_dir.join("Cargo.toml");
         let manifest = Manifest::from_file(manifest_path)?
             .ok_or_else(|| format_err!("missing Cargo manifest file"))?;
@@ -50,7 +50,13 @@ impl Runner {
             let mut content = Cow::Borrowed(content.as_str());
             let mut cx = ReplacerContext::new(&self.manifest.package);
             for replacer in &replace.replacers {
-                replacer.replace(&mut cx, &mut content)?;
+                content = match std::mem::replace(&mut content, Cow::Borrowed("<dummy>")) {
+                    Cow::Borrowed(b) => replacer.replace(&mut cx, b)?,
+                    Cow::Owned(o) => match replacer.replace(&mut cx, &content)? {
+                        Cow::Borrowed(..) => Cow::Owned(o),
+                        Cow::Owned(o) => Cow::Owned(o),
+                    },
+                };
             }
             content.into_owned()
         };
@@ -139,6 +145,27 @@ mod show_diff {
                 }
             }
             Ok(())
+        }
+    }
+}
+
+fn cargo_manifest_dir() -> Fallible<PathBuf> {
+    match std::env::var_os("CARGO_MANIFEST_DIR") {
+        Some(dir) => Ok(PathBuf::from(dir)),
+        None => {
+            let current_dir = std::env::current_dir()?;
+            let mut current_dir: &Path = &current_dir;
+            loop {
+                if current_dir.join("Cargo.toml").is_file() {
+                    return Ok(current_dir.to_owned());
+                }
+                current_dir = match current_dir.parent() {
+                    Some(parent) => parent,
+                    None => {
+                        return Err(failure::format_err!("The cargo manifest file is not found"))
+                    }
+                }
+            }
         }
     }
 }

@@ -46,7 +46,11 @@ pub enum Replacer {
 }
 
 impl Replacer {
-    pub fn replace(&self, cx: &mut ReplacerContext<'_>, text: &mut Cow<'_, str>) -> Fallible<()> {
+    pub fn replace<'t>(
+        &self,
+        cx: &mut ReplacerContext<'_>,
+        text: &'t str,
+    ) -> Fallible<Cow<'t, str>> {
         match self {
             Replacer::Regex(re) => re.replace(cx, text),
             Replacer::Builtin(builtin) => builtin.replace(cx, text),
@@ -61,7 +65,17 @@ pub struct RegexReplacer {
 }
 
 impl RegexReplacer {
-    fn replace(&self, cx: &mut ReplacerContext<'_>, text: &mut Cow<'_, str>) -> Fallible<()> {
+    fn replace<'t>(&self, cx: &mut ReplacerContext<'_>, text: &'t str) -> Fallible<Cow<'t, str>> {
+        let mut text = Cow::Borrowed(text);
+        self.replace_in_place(cx, &mut text)?;
+        Ok(text)
+    }
+
+    fn replace_in_place(
+        &self,
+        cx: &mut ReplacerContext<'_>,
+        text: &mut Cow<'_, str>,
+    ) -> Fallible<()> {
         let re = {
             let search = self.search.replace("{{name}}", &cx.package_name());
             Regex::new(&search)?
@@ -72,8 +86,13 @@ impl RegexReplacer {
                 .replace("{{version}}", cx.package_version())
                 .replace("{{date}}", &cx.date().format("%Y-%m-%d").to_string())
         };
-        crate::util::replace_all_in_place(&re, text, rep.as_str());
-
+        *text = match std::mem::replace(text, Cow::Borrowed("<dummy>")) {
+            Cow::Borrowed(content) => re.replace_all(content, rep.as_str()),
+            Cow::Owned(owned_content) => match re.replace_all(&owned_content, rep.as_str()) {
+                Cow::Borrowed(..) => Cow::Owned(owned_content),
+                Cow::Owned(replaced) => Cow::Owned(replaced),
+            },
+        };
         Ok(())
     }
 }
@@ -84,12 +103,15 @@ pub struct BuiltinReplacer {
 }
 
 impl BuiltinReplacer {
-    fn replace(&self, cx: &mut ReplacerContext<'_>, text: &mut Cow<'_, str>) -> Fallible<()> {
+    fn replace<'t>(&self, cx: &mut ReplacerContext<'_>, text: &'t str) -> Fallible<Cow<'t, str>> {
         match &*self.target {
-            "markdown" => (RegexReplacer {
-                search: "{{name}} = \"[0-9a-z\\.-]+\"".into(),
-                replace: "{{name}} = \"{{version}}\"".into(),
-            }).replace(cx, text),
+            "markdown" => {
+                // TODO: parse Markdown codeblock as TOML
+                (RegexReplacer {
+                    search: "{{name}} = \"[0-9a-z\\.-]+\"".into(),
+                    replace: "{{name}} = \"{{version}}\"".into(),
+                }).replace(cx, text)
+            }
             "html-root-url" => (RegexReplacer {
                 search: "https://docs.rs/{{name}}/[0-9a-z\\.-]+".into(),
                 replace: "https://docs.rs/{{name}}/{{version}}".into(),
