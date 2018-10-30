@@ -23,7 +23,8 @@ matrix:
         cargo clippy --all-features --all-targets &&
         cargo test &&
         cargo test --all-features &&
-        cargo test --no-default-features
+        cargo test --no-default-features &&
+        cargo test -p doctest
       before_deploy: >-
         rm -rf target/doc &&
         cargo doc --no-deps &&

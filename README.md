@@ -26,7 +26,7 @@ At first, add fields to `Cargo.toml` for specifying files to rewrite the version
 file = "README.md"
 replacers = [
   { type = "builtin", target = "markdown" },
-  { type = "regex", search = "https://deps.rs/crate/{{name}}/[a-z0-9\\.-]+", replace = "https://deps.rs/crate//{{name}}/{{version}}" },
+  { type = "regex", search = "https://deps.rs/crate/{{name}}/[a-z0-9\\.-]+", replace = "https://deps.rs/crate/{{name}}/{{version}}" },
 ]
 
 [[package.metadata.version-sync.replacements]]
@@ -44,6 +44,8 @@ $ cargo version-sync
 
 ## Integration test
 
+`cargo-version-sync` can also be used as a library used in integration tests.
+First, add the dependency to the member of `[dev-dependencies]`:
 
 ```toml
 [dev-dependencies]
@@ -61,6 +63,9 @@ fn test_version_sync() {
 }
 ```
 
+When there are some files that have not updated the version numbers,
+the integration test fails as follows:
+
 ```command
 $ cargo test
 ...
@@ -75,35 +80,6 @@ The version number(s) are not synced in the following files:
   - README.md
 ...
 ```
-
-## Pre-commit check
-
-in `.git/hooks/pre-commit`:
-
-```sh
-#!/bin/bash
-
-set -e
-
-if cargo fmt --version >/dev/null 2>&1; then
-    (set -x; cargo fmt -- --check)
-fi
-
-if cargo version-sync --version >/dev/null 2>&1; then
-    (set -x; cargo version-sync --check)
-fi
-```
-
-You can automatically install the custom Git hooks by using [`cargo-husky`].
-
-```toml
-[dev-dependencies.cargo-husky]
-version = "1"
-default-features = false
-features = ["user-hooks"]
-```
-
-[`cargo-husky`]: https://github.com/rhysd/cargo-husky.git
 
 ## Alternatives
 

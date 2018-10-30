@@ -67,6 +67,9 @@ bin = ["structopt", "show-diff"]
 show-diff = ["difference", "colored", "bytecount"]
 
 [workspace]
+members = [
+  "doctest",
+]
 exclude = [
   "testcrate",
 ]
