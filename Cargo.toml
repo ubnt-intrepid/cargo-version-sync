@@ -22,15 +22,16 @@ include = [
 
 [[package.metadata.version-sync.replacements]]
 file = "README.md"
-patterns = [
-  { search = "{{name}} = \"[a-z0-9\\.-]+\"", replace = "{{name}} = \"{{version}}\"" },
-  { search = "{{name}} = \\{ version = \"[a-z0-9\\.-]+\", default-features = false \\}", replace = "{{name}} = { version = \"{{version}}\", default-features = false }" },
+replacers = [
+  { type = "builtin", target = "markdown" },
+  { type = "regex", search = "{{name}} = \\{ version = \"[a-z0-9\\.-]+\", default-features = false \\}", replace = "{{name}} = { version = \"{{version}}\", default-features = false }" },
+  { type = "regex", search = "https://deps.rs/crate/{{name}}/[a-z0-9\\.-]+", replace = "https://deps.rs/crate//{{name}}/{{version}}" },
 ]
 
 [[package.metadata.version-sync.replacements]]
 file = "src/lib.rs"
-patterns = [
-  { search = "https://docs.rs/{{name}}/[a-z0-9\\.-]+", replace = "https://docs.rs/{{name}}/{{version}}" },
+replacers = [
+  { type = "builtin", target = "html-root-url" },
 ]
 
 [lib]

@@ -23,8 +23,15 @@ At first, add fields to `Cargo.toml` for specifying files to rewrite the version
 ```toml
 [[package.metadata.version-sync.replacements]]
 file = "README.md"
-patterns = [
-  { search = "https://deps.rs/crate/{{name}}/[a-z0-9\\.-]+", replace = "https://deps.rs/crate/{{name}}/{{version}}" },
+replacers = [
+  { type = "builtin", target = "markdown" },
+  { type = "regex", search = "https://deps.rs/crate/{{name}}/[a-z0-9\\.-]+", replace = "https://deps.rs/crate//{{name}}/{{version}}" },
+]
+
+[[package.metadata.version-sync.replacements]]
+file = "src/lib.rs"
+replacers = [
+  { type = "builtin", target = "html-root-url" },
 ]
 ```
 
@@ -49,7 +56,7 @@ extern crate cargo_version_sync;
 
 #[test]
 fn test_version_sync() {
-    cargo_version_sync::assert_sync();
+    cargo_version_sync::assert_version_sync();
 }
 ```
 

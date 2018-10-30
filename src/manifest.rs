@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 use failure::Fallible;
 use serde::Deserialize;
 
+use crate::replacer::Replacer;
+
 #[derive(Debug, Deserialize)]
 pub struct Manifest {
     pub package: Package,
@@ -42,11 +44,5 @@ pub struct Config {
 #[derive(Clone, Debug, Deserialize)]
 pub struct Replacement {
     pub file: PathBuf,
-    pub patterns: Vec<Pattern>,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct Pattern {
-    pub search: String,
-    pub replace: String,
+    pub replacers: Vec<Replacer>,
 }

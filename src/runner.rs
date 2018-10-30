@@ -3,11 +3,10 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use chrono::Local;
 use failure::{format_err, Fallible};
-use regex::Regex;
 
 use crate::manifest::{Manifest, Replacement};
+use crate::replacer::ReplacerContext;
 
 #[derive(Debug)]
 pub struct Diff {
@@ -48,25 +47,12 @@ impl Runner {
         let content = fs::read_to_string(&replace.file)?;
 
         let replaced = {
-            let mut replaced = Cow::Borrowed(content.as_str());
-            for pattern in &replace.patterns {
-                let re = {
-                    let search = pattern
-                        .search
-                        .replace("{{name}}", &self.manifest.package.name);
-                    Regex::new(&search)?
-                };
-                let rep = {
-                    let date = Local::now();
-                    pattern
-                        .replace
-                        .replace("{{name}}", &self.manifest.package.name)
-                        .replace("{{version}}", &self.manifest.package.version)
-                        .replace("{{date}}", &date.format("%Y-%m-%d").to_string())
-                };
-                crate::util::replace_all_in_place(&re, &mut replaced, rep.as_str());
+            let mut content = Cow::Borrowed(content.as_str());
+            let mut cx = ReplacerContext::new(&self.manifest.package);
+            for replacer in &replace.replacers {
+                replacer.replace(&mut cx, &mut content)?;
             }
-            replaced.into_owned()
+            content.into_owned()
         };
 
         if content != replaced {
@@ -118,9 +104,9 @@ fn collect_replacements(manifest: &Manifest) -> Fallible<Vec<Replacement>> {
                 .entry(file.clone())
                 .or_insert_with(|| Replacement {
                     file,
-                    patterns: vec![],
-                }).patterns
-                .extend(replace.patterns.clone());
+                    replacers: vec![],
+                }).replacers
+                .extend(replace.replacers.clone());
         }
     }
 

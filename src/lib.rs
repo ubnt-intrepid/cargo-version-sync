@@ -15,6 +15,7 @@ extern crate difference;
 
 mod assert;
 mod manifest;
+mod replacer;
 pub mod runner;
 mod util;
 
