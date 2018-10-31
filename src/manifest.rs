@@ -38,6 +38,10 @@ pub struct Metadata {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {
+    #[serde(rename = "use-preset", default)]
+    pub use_preset: bool,
+
+    #[serde(default)]
     pub replacements: Vec<Replacement>,
 }
 

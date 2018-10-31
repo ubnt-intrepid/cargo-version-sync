@@ -42,6 +42,23 @@ Then run the command `cargo version-sync` to rewrite version numbers:
 $ cargo version-sync
 ```
 
+## Using Preset
+
+You can use the preset replacers by setting the key `use-preset`.
+
+```toml
+[package.metadata.version-sync]
+use-preset = true
+```
+
+Currently, replacers are registered for the following files:
+
+* `file = "README.md"`
+  - `{ type = "builtin", target = "markdown" }`
+  - `{ type = "regex", search = "https://deps.rs/crate/{{name}}/[0-9a-z\\.-]+", replace = "https://deps.rs/crate/{{name}}/{{version}}" }`
+* `file = "src/lib.rs"`
+  - `{ type = "builtin", target = "html-root-url" }`
+
 ## Integration test
 
 `cargo-version-sync` can also be used as a library used in integration tests.
@@ -91,6 +108,6 @@ The version number(s) are not synced in the following files:
 
 <!--
 ```toml
-cargo-version-sync = "0.0.2"
+cargo-version-sync = "0.0.3"
 ```
 -->

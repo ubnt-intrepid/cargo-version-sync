@@ -72,7 +72,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "cargo-version-sync"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "bytecount 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cargo-husky 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -137,7 +137,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "doctest"
 version = "0.0.0"
 dependencies = [
- "cargo-version-sync 0.0.2",
+ "cargo-version-sync 0.0.3",
  "doubter 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

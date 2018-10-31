@@ -1,6 +1,6 @@
 [package]
 name = "cargo-version-sync"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Yusuke Sasaki <yusuke.sasaki.nuem@gmail.com>"]
 license = "MIT"
 repository = "https://github.com/ubnt-intrepid/cargo-prerelease.git"
@@ -20,19 +20,8 @@ include = [
   "/benches/**/*.rs",
 ]
 
-[[package.metadata.version-sync.replacements]]
-file = "README.md"
-replacers = [
-  { type = "builtin", target = "markdown" },
-  { type = "regex", search = "{{name}} = \\{ version = \"[a-z0-9\\.-]+\", default-features = false \\}", replace = "{{name}} = { version = \"{{version}}\", default-features = false }" },
-  { type = "regex", search = "https://deps.rs/crate/{{name}}/[a-z0-9\\.-]+", replace = "https://deps.rs/crate/{{name}}/{{version}}" },
-]
-
-[[package.metadata.version-sync.replacements]]
-file = "src/lib.rs"
-replacers = [
-  { type = "builtin", target = "html-root-url" },
-]
+[package.metadata.version-sync]
+use-preset = true
 
 [lib]
 name = "cargo_version_sync"

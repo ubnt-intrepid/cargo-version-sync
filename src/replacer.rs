@@ -46,6 +46,25 @@ pub enum Replacer {
 }
 
 impl Replacer {
+    pub fn builtin(target: &str) -> Fallible<Replacer> {
+        match target {
+            "markdown" => Ok(Replacer::Builtin(BuiltinReplacer {
+                target: "markdown".into(),
+            })),
+            "html-root-url" => Ok(Replacer::Builtin(BuiltinReplacer {
+                target: "html-root-url".into(),
+            })),
+            target => Err(failure::format_err!("invalid builtin target: {}", target)),
+        }
+    }
+
+    pub fn regex(search: &str, replace: &str) -> Replacer {
+        Replacer::Regex(RegexReplacer {
+            search: search.into(),
+            replace: replace.into(),
+        })
+    }
+
     pub fn replace<'t>(
         &self,
         cx: &mut ReplacerContext<'_>,

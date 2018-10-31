@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use failure::{format_err, Fallible};
 
 use crate::manifest::{Manifest, Replacement};
-use crate::replacer::ReplacerContext;
+use crate::replacer::{Replacer, ReplacerContext};
 
 #[derive(Debug)]
 pub struct Diff {
@@ -30,7 +30,18 @@ impl Runner {
         let manifest = Manifest::from_file(manifest_path)?
             .ok_or_else(|| format_err!("missing Cargo manifest file"))?;
 
-        let replacements = collect_replacements(&manifest)?;
+        let replacements = if manifest
+            .package
+            .metadata
+            .as_ref()
+            .and_then(|metadata| metadata.version_sync.as_ref())
+            .map_or(false, |v| v.use_preset)
+        {
+            println!("[cargo-version-sync] use preset");
+            build_replacement_preset(&manifest_dir)?
+        } else {
+            collect_replacements(&manifest, &manifest_dir)?
+        };
 
         Ok(Self {
             manifest,
@@ -94,7 +105,32 @@ impl Runner {
     }
 }
 
-fn collect_replacements(manifest: &Manifest) -> Fallible<Vec<Replacement>> {
+fn build_replacement_preset(manifest_dir: impl AsRef<Path>) -> Fallible<Vec<Replacement>> {
+    let mut preset = vec![];
+
+    preset.push(Replacement {
+        file: manifest_dir.as_ref().join("README.md").canonicalize()?,
+        replacers: vec![
+            Replacer::builtin("markdown")?,
+            Replacer::regex(
+                "https://deps.rs/crate/{{name}}/[0-9a-z\\.-]+",
+                "https://deps.rs/crate/{{name}}/{{version}}",
+            ),
+        ],
+    });
+
+    preset.push(Replacement {
+        file: manifest_dir.as_ref().join("src/lib.rs").canonicalize()?,
+        replacers: vec![Replacer::builtin("html-root-url")?],
+    });
+
+    Ok(preset)
+}
+
+fn collect_replacements(
+    manifest: &Manifest,
+    manifest_dir: impl AsRef<Path>,
+) -> Fallible<Vec<Replacement>> {
     let mut collected: HashMap<PathBuf, Replacement> = HashMap::new();
 
     if let Some(ref replacements) = manifest
@@ -105,7 +141,7 @@ fn collect_replacements(manifest: &Manifest) -> Fallible<Vec<Replacement>> {
         .map(|version_sync| &version_sync.replacements)
     {
         for replace in replacements.iter() {
-            let file = replace.file.canonicalize()?;
+            let file = manifest_dir.as_ref().join(&replace.file).canonicalize()?;
             collected
                 .entry(file.clone())
                 .or_insert_with(|| Replacement {
