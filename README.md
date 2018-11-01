@@ -108,6 +108,6 @@ The version number(s) are not synced in the following files:
 
 <!--
 ```toml
-cargo-version-sync = "0.0.3"
+cargo-version-sync = "0.0.4"
 ```
 -->

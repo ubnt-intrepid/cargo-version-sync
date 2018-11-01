@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/cargo-version-sync/0.0.3")]
+#![doc(html_root_url = "https://docs.rs/cargo-version-sync/0.0.4")]
 
 extern crate chrono;
 extern crate failure;

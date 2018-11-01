@@ -63,7 +63,7 @@ impl Runner {
             for replacer in &replace.replacers {
                 content = match std::mem::replace(&mut content, Cow::Borrowed("<dummy>")) {
                     Cow::Borrowed(b) => replacer.replace(&mut cx, b)?,
-                    Cow::Owned(o) => match replacer.replace(&mut cx, &content)? {
+                    Cow::Owned(o) => match replacer.replace(&mut cx, &o)? {
                         Cow::Borrowed(..) => Cow::Owned(o),
                         Cow::Owned(o) => Cow::Owned(o),
                     },
