@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 
 use failure::{format_err, Fallible};
@@ -50,25 +51,33 @@ impl Runner {
             .and_then(|metadata| metadata.version_sync.as_ref())
     }
 
+    fn resolve_path(&self, path: impl AsRef<Path>) -> io::Result<Option<PathBuf>> {
+        match self.manifest_dir.join(path).canonicalize() {
+            Ok(path) => Ok(Some(path)),
+            Err(ref e) if e.kind() == io::ErrorKind::NotFound => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+
     fn build_preset(&mut self) -> Fallible<()> {
-        let file = self.manifest_dir.join("README.md").canonicalize()?;
-        self.replacements
-            .entry(file.clone())
-            .or_insert_with(Default::default)
-            .extend(vec![
-                Replacer::builtin("markdown")?,
-                Replacer::regex(
-                    "https://deps.rs/crate/{{name}}/[0-9a-z\\.-]+",
-                    "https://deps.rs/crate/{{name}}/{{version}}",
-                ),
-            ]);
-
-        let file = self.manifest_dir.join("src/lib.rs").canonicalize()?;
-        self.replacements
-            .entry(file.clone())
-            .or_insert_with(Default::default)
-            .extend(vec![Replacer::builtin("html-root-url")?]);
-
+        if let Some(file) = self.resolve_path("README.md")? {
+            self.replacements
+                .entry(file.clone())
+                .or_insert_with(Default::default)
+                .extend(vec![
+                    Replacer::builtin("markdown")?,
+                    Replacer::regex(
+                        "https://deps.rs/crate/{{name}}/[0-9a-z\\.-]+",
+                        "https://deps.rs/crate/{{name}}/{{version}}",
+                    ),
+                ]);
+        }
+        if let Some(file) = self.resolve_path("src/lib.rs")? {
+            self.replacements
+                .entry(file.clone())
+                .or_insert_with(Default::default)
+                .push(Replacer::builtin("html-root-url")?);
+        }
         Ok(())
     }
 
@@ -82,11 +91,12 @@ impl Runner {
             .map(|version_sync| &version_sync.replacements)
         {
             for replace in parsed_replacements.iter() {
-                let file = self.manifest_dir.join(&replace.file).canonicalize()?;
-                self.replacements
-                    .entry(file.clone())
-                    .or_insert_with(Default::default)
-                    .extend(replace.replacers.clone());
+                if let Some(file) = self.resolve_path(&replace.file)? {
+                    self.replacements
+                        .entry(file.clone())
+                        .or_insert_with(Default::default)
+                        .extend(replace.replacers.clone());
+                }
             }
         }
 
@@ -124,12 +134,6 @@ impl Runner {
             diffs,
             manifest_dir: &self.manifest_dir,
         })
-    }
-
-    pub fn relative_file_path<'a>(&self, diff: &'a Diff) -> Fallible<&'a Path> {
-        diff.file
-            .strip_prefix(&self.manifest_dir)
-            .map_err(Into::into)
     }
 }
 
