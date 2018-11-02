@@ -18,10 +18,6 @@ mod cli {
         /// Uses verbose output
         #[structopt(short = "v", long = "verbose")]
         pub verbose: bool,
-
-        /// Do not overwrite the target files
-        #[structopt(long = "check")]
-        pub check: bool,
     }
 
     pub fn parse_args() -> VersionSync {
@@ -32,18 +28,11 @@ mod cli {
 }
 
 fn main() -> failure::Fallible<()> {
-    let args = cli::parse_args();
+    cli::parse_args();
     let runner = Runner::init()?;
 
     let diffs = runner.collect_diffs()?;
-    if diffs.is_empty() {
-        if args.verbose {
-            println!("[cargo-version-sync] no change(s) detected.");
-        }
-        return Ok(());
-    }
-
-    if args.check {
+    if !diffs.is_empty() {
         println!("[cargo-version-sync] detect unsynced files:");
         for diff in &diffs {
             runner.show_diff(&diff)?;
@@ -52,15 +41,6 @@ fn main() -> failure::Fallible<()> {
         std::process::exit(1);
     }
 
-    for diff in &diffs {
-        if args.verbose {
-            println!(
-                "[cargo-version-sync] update {}",
-                runner.relative_file_path(diff)?.display()
-            );
-        }
-        std::fs::write(&diff.file, &diff.replaced)?;
-    }
-
+    println!("[cargo-version-sync] no change(s) detected.");
     Ok(())
 }
