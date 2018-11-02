@@ -4,16 +4,9 @@ use std::path::{Path, PathBuf};
 
 use failure::{format_err, Fallible};
 
+use crate::changeset::{Changeset, Diff};
 use crate::manifest::{Config, Manifest};
 use crate::replacer::{Replacer, ReplacerContext};
-
-#[derive(Debug)]
-pub struct Diff {
-    pub file: PathBuf,
-    pub content: String,
-    pub replaced: String,
-    _priv: (),
-}
 
 #[derive(Debug)]
 pub struct Runner {
@@ -100,7 +93,7 @@ impl Runner {
         Ok(())
     }
 
-    pub fn collect_diffs(&self) -> Fallible<Vec<Diff>> {
+    pub fn collect_changeset(&self) -> Fallible<Changeset> {
         let mut diffs = Vec::new();
 
         for (path, replacers) in &self.replacements {
@@ -123,48 +116,20 @@ impl Runner {
                     file: path.clone(),
                     content,
                     replaced,
-                    _priv: (),
                 });
             }
         }
 
-        Ok(diffs)
+        Ok(Changeset {
+            diffs,
+            manifest_dir: &self.manifest_dir,
+        })
     }
 
     pub fn relative_file_path<'a>(&self, diff: &'a Diff) -> Fallible<&'a Path> {
         diff.file
             .strip_prefix(&self.manifest_dir)
             .map_err(Into::into)
-    }
-}
-
-#[cfg(feature = "show-diff")]
-mod show_diff {
-    use super::*;
-
-    use colored::Colorize;
-    use difference::{Changeset, Difference};
-
-    impl super::Runner {
-        pub fn show_diff(&self, diff: &Diff) -> Fallible<()> {
-            let file = diff.file.strip_prefix(&self.manifest_dir)?;
-            let changeset = Changeset::new(&diff.content, &diff.replaced, "\n");
-
-            println!("{}:", file.display());
-
-            let mut line = 1;
-            for diff in &changeset.diffs {
-                match diff {
-                    Difference::Same(ref x) => line += bytecount::count(x.as_ref(), b'\n') + 1,
-                    Difference::Rem(ref x) => {
-                        println!("  - ({:>4}) {}", line, x.to_string().red());
-                        line += 1;
-                    }
-                    _ => {}
-                }
-            }
-            Ok(())
-        }
     }
 }
 

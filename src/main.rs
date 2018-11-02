@@ -31,13 +31,9 @@ fn main() -> failure::Fallible<()> {
     cli::parse_args();
     let runner = Runner::init()?;
 
-    let diffs = runner.collect_diffs()?;
-    if !diffs.is_empty() {
-        println!("[cargo-version-sync] detect unsynced files:");
-        for diff in &diffs {
-            runner.show_diff(&diff)?;
-            println!();
-        }
+    let changeset = runner.collect_changeset()?;
+    if !changeset.diffs.is_empty() {
+        println!("{}", changeset);
         std::process::exit(1);
     }
 

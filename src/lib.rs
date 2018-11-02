@@ -6,14 +6,8 @@ extern crate regex;
 extern crate serde;
 extern crate toml;
 
-#[cfg(feature = "show-diff")]
-extern crate bytecount;
-#[cfg(feature = "show-diff")]
-extern crate colored;
-#[cfg(feature = "show-diff")]
-extern crate difference;
-
 mod assert;
+mod changeset;
 mod manifest;
 mod replacer;
 pub mod runner;
