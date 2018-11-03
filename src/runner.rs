@@ -32,9 +32,8 @@ impl Runner {
         if runner.config().map_or(true, |config| config.use_preset) {
             println!("[cargo-version-sync] use preset");
             runner.build_preset()?;
-        } else {
-            runner.collect_replacements()?;
         }
+        runner.collect_replacements()?;
 
         Ok(runner)
     }
