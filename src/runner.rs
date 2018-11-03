@@ -29,7 +29,7 @@ impl Runner {
             replacements: HashMap::new(),
         };
 
-        if runner.config().map_or(false, |config| config.use_preset) {
+        if runner.config().map_or(true, |config| config.use_preset) {
             println!("[cargo-version-sync] use preset");
             runner.build_preset()?;
         } else {
